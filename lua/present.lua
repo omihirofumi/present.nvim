@@ -4,6 +4,31 @@ M.setup = function()
 	-- nothing
 end
 
+local function create_floating_window(opts)
+	opts = opts or {}
+	local width = opts.width or math.floor(vim.o.columns * 0.8)
+	local height = opts.height or math.floor(vim.o.lines * 0.8)
+
+	local col = math.floor((vim.o.columns - width) / 2)
+	local row = math.floor((vim.o.lines - height) / 2)
+
+	local buf = vim.api.nvim_create_buf(false, true)
+
+	local win_config = {
+		relative = "editor",
+		width = width,
+		height = height,
+		col = col,
+		row = row,
+		style = "minimal",
+		border = "rounded",
+	}
+
+	local win = vim.api.nvim_open_win(buf, true, win_config)
+
+	return { buf = buf, win = win }
+end
+
 ---@class present.Slides
 ---@fields slides string[]: The slides of the file
 
@@ -31,10 +56,14 @@ local parse_slides = function(lines)
 	return slides
 end
 
-M.start_presentation = function()
-	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+M.start_presentation = function(opts)
+	opts = opts or {}
+	opts.bufnr = opts.bufnr or 0
+	local lines = vim.api.nvim_buf_get_lines(opts.bufnr, 0, -1, false)
 	local parsed = parse_slides(lines)
 	local float = create_floating_window()
+
+	vim.api.nvim_buf_set_lines(float.buf, 0, -1, false, parsed.slides[1])
 end
 
 vim.print(parse_slides({
@@ -43,5 +72,7 @@ vim.print(parse_slides({
 	"# World",
 	"this is another thing",
 }))
+
+M.start_presentation({ bufnr = 57 })
 
 return M
