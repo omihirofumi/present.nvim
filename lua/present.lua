@@ -6,8 +6,8 @@ end
 
 local function create_floating_window(opts)
 	opts = opts or {}
-	local width = opts.width or math.floor(vim.o.columns * 0.8)
-	local height = opts.height or math.floor(vim.o.lines * 0.8)
+	local width = opts.width or vim.o.columns
+	local height = opts.height or vim.o.lines
 
 	local col = math.floor((vim.o.columns - width) / 2)
 	local row = math.floor((vim.o.lines - height) / 2)
@@ -21,7 +21,7 @@ local function create_floating_window(opts)
 		col = col,
 		row = row,
 		style = "minimal",
-		border = "rounded",
+		border = { " ", " ", " ", " ", " ", " ", " ", " " },
 	}
 
 	local win = vim.api.nvim_open_win(buf, true, win_config)
@@ -41,7 +41,7 @@ local parse_slides = function(lines)
 
 	local seperator = "^#"
 	for _, line in ipairs(lines) do
-		print(line, "find:", line:find(seperator), "|")
+		-- print(line, "find:", line:find(seperator), "|")
 		if line:find(seperator) then
 			if #current_slide > 0 then
 				table.insert(slides.slides, current_slide)
@@ -82,6 +82,26 @@ M.start_presentation = function(opts)
 		buffer = float.buf,
 	})
 
+	local restore = {
+		cmdheight = {
+			original = vim.o.cmdheight,
+			present = 0,
+		},
+	}
+
+	for option, config in pairs(restore) do
+		vim.opt[option] = config.present
+	end
+
+	vim.api.nvim_create_autocmd("BufLeave", {
+		buffer = float.buf,
+		callback = function()
+			for option, config in pairs(restore) do
+				vim.opt[option] = config.original
+			end
+		end,
+	})
+
 	vim.api.nvim_buf_set_lines(float.buf, 0, -1, false, parsed.slides[1])
 end
 
@@ -92,6 +112,6 @@ end
 -- 	"this is another thing",
 -- }))
 
--- M.start_presentation({ bufnr = 57 })
+M.start_presentation({ bufnr = 272 })
 
 return M
